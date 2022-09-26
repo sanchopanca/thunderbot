@@ -11,13 +11,8 @@ use serenity::prelude::*;
 
 struct Handler;
 
-fn match_message(message: &str, patterns: Vec<&str>) -> bool {
-    for p in patterns {
-        if message.contains(&p) {
-            return true;
-        }
-    }
-    false
+fn match_message(message: &str, patterns: &[&str]) -> bool {
+    patterns.iter().any(|p| message.contains(p))
 }
 
 async fn send_message(channel: ChannelId, ctx: Context, message: &str) {
@@ -26,7 +21,7 @@ async fn send_message(channel: ChannelId, ctx: Context, message: &str) {
     }
 }
 
-fn random_choice(v: Vec<&str>) -> &str {
+fn random_choice<'some_value>(v: &[&'some_value str]) -> &'some_value str {
     v.choose(&mut thread_rng()).unwrap() // todo: empty vector
 }
 
@@ -35,9 +30,9 @@ impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         if match_message(
             &msg.content,
-            vec!["kpop time", "k p o p   t i m e", "kpop tijd"],
+            &["kpop time", "k p o p   t i m e", "kpop tijd"],
         ) {
-            let kpop = vec![
+            let kpop = &[
                 "https://youtu.be/9bZkp7q19f0",
                 "https://youtu.be/POe9SOEKotk",
                 "https://youtu.be/5UdoUmvu_n8",
@@ -61,7 +56,7 @@ impl EventHandler for Handler {
                 "https://youtu.be/lcRV2gyEfMo",
             ];
             send_message(msg.channel_id, ctx, random_choice(kpop)).await;
-        } else if match_message(&msg.content, vec!["hat a week huh", "hat a week, huh"]) {
+        } else if match_message(&msg.content, &["hat a week huh", "hat a week, huh"]) {
             send_message(msg.channel_id, ctx, "https://whataweek.eu").await;
         }
     }
@@ -88,5 +83,18 @@ async fn main() {
 
     if let Err(why) = client.start().await {
         println!("Client error: {:?}", why);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn match_message_works() {
+        let patterns = &["kpop time", "kpop tijd"];
+        assert!(match_message("Is it kpop time yet", patterns));
+        assert!(match_message("Is het al kpop tijd?", patterns));
+        assert!(!match_message("It's Britney time", patterns));
     }
 }
