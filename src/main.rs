@@ -21,7 +21,7 @@ async fn send_message(channel: ChannelId, ctx: Context, message: &str) {
     }
 }
 
-fn random_choice<'some_value>(v: &[&'some_value str]) -> &'some_value str {
+fn random_choice<'a>(v: &[&'a str]) -> &'a str {
     v.choose(&mut thread_rng()).unwrap() // todo: empty vector
 }
 
