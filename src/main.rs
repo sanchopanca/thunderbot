@@ -9,6 +9,45 @@ use serenity::model::gateway::Ready;
 use serenity::model::prelude::ChannelId;
 use serenity::prelude::*;
 
+use lazy_static::lazy_static;
+
+use dashmap::DashMap;
+
+lazy_static! {
+    static ref BOT_RULES: DashMap<Vec<&'static str>, Vec<&'static str>> = {
+        let rules = DashMap::new();
+        let kpop = vec![
+            "https://youtu.be/9bZkp7q19f0",
+            "https://youtu.be/POe9SOEKotk",
+            "https://youtu.be/5UdoUmvu_n8",
+            "https://youtu.be/2e-Q7GfCGbA",
+            "https://youtu.be/id6q2EP2UqE",
+            "https://youtu.be/8dJyRm2jJ-U",
+            "https://youtu.be/JQGRg8XBnB4",
+            "https://youtu.be/Hbb5GPxXF1w",
+            "https://youtu.be/p1bjnyDqI9k",
+            "https://youtu.be/k6jqx9kZgPM",
+            "https://youtu.be/z8Eu-HU0sWQ",
+            "https://youtu.be/eH8jn4W8Bqc",
+            "https://youtu.be/IHNzOHi8sJs",
+            "https://youtu.be/WPdWvnAAurg",
+            "https://youtu.be/gdZLi9oWNZg",
+            "https://youtu.be/H8kqPkEXP_E",
+            "https://youtu.be/awkkyBH2zEo",
+            "https://youtu.be/z3szNvgQxHo",
+            "https://youtu.be/i0p1bmr0EmE",
+            "https://youtu.be/WyiIGEHQP8o",
+            "https://youtu.be/lcRV2gyEfMo",
+        ];
+        rules.insert(vec!["kpop time", "k p o p   t i m e", "kpop tijd"], kpop);
+        rules.insert(
+            vec!["hat a week huh", "hat a week, huh"],
+            vec!["https://whataweek.eu"],
+        );
+        rules
+    };
+}
+
 struct Handler;
 
 fn match_message(message: &str, patterns: &[&str]) -> bool {
@@ -25,39 +64,23 @@ fn random_choice<'a>(v: &[&'a str]) -> &'a str {
     v.choose(&mut thread_rng()).unwrap() // todo: empty vector
 }
 
+fn respond(message: &str) -> Option<&str> {
+    for entry in BOT_RULES.iter() {
+        let prompts = entry.key();
+        let responses = entry.value();
+        if match_message(message, prompts) {
+            return Some(random_choice(responses));
+        }
+    }
+    None
+}
+
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if match_message(
-            &msg.content,
-            &["kpop time", "k p o p   t i m e", "kpop tijd"],
-        ) {
-            let kpop = &[
-                "https://youtu.be/9bZkp7q19f0",
-                "https://youtu.be/POe9SOEKotk",
-                "https://youtu.be/5UdoUmvu_n8",
-                "https://youtu.be/2e-Q7GfCGbA",
-                "https://youtu.be/id6q2EP2UqE",
-                "https://youtu.be/8dJyRm2jJ-U",
-                "https://youtu.be/JQGRg8XBnB4",
-                "https://youtu.be/Hbb5GPxXF1w",
-                "https://youtu.be/p1bjnyDqI9k",
-                "https://youtu.be/k6jqx9kZgPM",
-                "https://youtu.be/z8Eu-HU0sWQ",
-                "https://youtu.be/eH8jn4W8Bqc",
-                "https://youtu.be/IHNzOHi8sJs",
-                "https://youtu.be/WPdWvnAAurg",
-                "https://youtu.be/gdZLi9oWNZg",
-                "https://youtu.be/H8kqPkEXP_E",
-                "https://youtu.be/awkkyBH2zEo",
-                "https://youtu.be/z3szNvgQxHo",
-                "https://youtu.be/i0p1bmr0EmE",
-                "https://youtu.be/WyiIGEHQP8o",
-                "https://youtu.be/lcRV2gyEfMo",
-            ];
-            send_message(msg.channel_id, ctx, random_choice(kpop)).await;
-        } else if match_message(&msg.content, &["hat a week huh", "hat a week, huh"]) {
-            send_message(msg.channel_id, ctx, "https://whataweek.eu").await;
+        match respond(&msg.content) {
+            Some(response) => send_message(msg.channel_id, ctx, response).await,
+            None => (),
         }
     }
 
