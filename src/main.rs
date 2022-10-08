@@ -3,6 +3,14 @@ use std::env;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
+use hyper::service::{make_service_fn, service_fn};
+use hyper::{Body, Request, Response, Server};
+use std::{convert::Infallible, net::SocketAddr};
+
+use tera::{Context as TeraContext, Tera};
+
+use futures::join;
+
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
@@ -48,6 +56,18 @@ lazy_static! {
     };
 }
 
+lazy_static! {
+    pub static ref TEMPLATES: Tera = {
+        match Tera::new("templates/**/*") {
+            Ok(t) => t,
+            Err(e) => {
+                println!("Parsing error(s): {}", e);
+                ::std::process::exit(1);
+            }
+        }
+    };
+}
+
 struct Handler;
 
 fn match_message(message: &str, patterns: &[&str]) -> bool {
@@ -89,6 +109,14 @@ impl EventHandler for Handler {
     }
 }
 
+async fn handle_web_request(_: Request<Body>) -> Result<Response<Body>, Infallible> {
+    let mut ctx = TeraContext::new();
+    ctx.insert("who", "world");
+    Ok(Response::new(
+        TEMPLATES.render("index.html", &ctx).unwrap().into(),
+    ))
+}
+
 // I'm not sure sqlite will work well in multithread env,
 // so limit everything to one thread for now, even if we don't use sqlite currently
 #[tokio::main(flavor = "current_thread")]
@@ -104,8 +132,21 @@ async fn main() {
         .await
         .expect("Err creating client");
 
-    if let Err(why) = client.start().await {
-        println!("Client error: {:?}", why);
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+
+    let make_svc =
+        make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(handle_web_request)) });
+
+    let server = Server::bind(&addr).serve(make_svc);
+
+    match join!(client.start(), server) {
+        (Err(client_error), Err(server_error)) => {
+            eprintln!("Discord client error: {:?}", client_error);
+            eprintln!("Error starting web server: {:?}", server_error);
+        }
+        (Err(client_error), _) => eprintln!("Discord client error: {:?}", client_error),
+        (_, Err(server_error)) => eprintln!("Error starting web server: {:?}", server_error),
+        _ => (),
     }
 }
 
