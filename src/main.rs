@@ -22,36 +22,36 @@ use lazy_static::lazy_static;
 use dashmap::DashMap;
 
 lazy_static! {
-    static ref BOT_RULES: DashMap<Vec<&'static str>, Vec<&'static str>> = {
+    static ref BOT_RULES: DashMap<String, Vec<String>> = {
         let rules = DashMap::new();
         let kpop = vec![
-            "https://youtu.be/9bZkp7q19f0",
-            "https://youtu.be/POe9SOEKotk",
-            "https://youtu.be/5UdoUmvu_n8",
-            "https://youtu.be/2e-Q7GfCGbA",
-            "https://youtu.be/id6q2EP2UqE",
-            "https://youtu.be/8dJyRm2jJ-U",
-            "https://youtu.be/JQGRg8XBnB4",
-            "https://youtu.be/Hbb5GPxXF1w",
-            "https://youtu.be/p1bjnyDqI9k",
-            "https://youtu.be/k6jqx9kZgPM",
-            "https://youtu.be/z8Eu-HU0sWQ",
-            "https://youtu.be/eH8jn4W8Bqc",
-            "https://youtu.be/IHNzOHi8sJs",
-            "https://youtu.be/WPdWvnAAurg",
-            "https://youtu.be/gdZLi9oWNZg",
-            "https://youtu.be/H8kqPkEXP_E",
-            "https://youtu.be/awkkyBH2zEo",
-            "https://youtu.be/z3szNvgQxHo",
-            "https://youtu.be/i0p1bmr0EmE",
-            "https://youtu.be/WyiIGEHQP8o",
-            "https://youtu.be/lcRV2gyEfMo",
+            String::from("https://youtu.be/9bZkp7q19f0"),
+            String::from("https://youtu.be/POe9SOEKotk"),
+            String::from("https://youtu.be/5UdoUmvu_n8"),
+            String::from("https://youtu.be/2e-Q7GfCGbA"),
+            String::from("https://youtu.be/id6q2EP2UqE"),
+            String::from("https://youtu.be/8dJyRm2jJ-U"),
+            String::from("https://youtu.be/JQGRg8XBnB4"),
+            String::from("https://youtu.be/Hbb5GPxXF1w"),
+            String::from("https://youtu.be/p1bjnyDqI9k"),
+            String::from("https://youtu.be/k6jqx9kZgPM"),
+            String::from("https://youtu.be/z8Eu-HU0sWQ"),
+            String::from("https://youtu.be/eH8jn4W8Bqc"),
+            String::from("https://youtu.be/IHNzOHi8sJs"),
+            String::from("https://youtu.be/WPdWvnAAurg"),
+            String::from("https://youtu.be/gdZLi9oWNZg"),
+            String::from("https://youtu.be/H8kqPkEXP_E"),
+            String::from("https://youtu.be/awkkyBH2zEo"),
+            String::from("https://youtu.be/z3szNvgQxHo"),
+            String::from("https://youtu.be/i0p1bmr0EmE"),
+            String::from("https://youtu.be/WyiIGEHQP8o"),
+            String::from("https://youtu.be/lcRV2gyEfMo"),
         ];
-        rules.insert(vec!["kpop time", "k p o p   t i m e", "kpop tijd"], kpop);
-        rules.insert(
-            vec!["hat a week huh", "hat a week, huh"],
-            vec!["https://whataweek.eu"],
-        );
+        rules.insert(String::from("kpop time"), kpop.clone());
+        rules.insert(String::from("k p o p   t i m e"), kpop.clone());
+        rules.insert(String::from("kpop tijd"), kpop);
+        rules.insert(String::from("hat a week huh"), vec![String::from("https://whataweek.eu")]);
+        rules.insert(String::from("hat a week huh"), vec![String::from("https://whataweek.eu")]);
         rules
     };
 }
@@ -70,8 +70,14 @@ lazy_static! {
 
 struct Handler;
 
+#[allow(dead_code)]
 fn match_message(message: &str, patterns: &[&str]) -> bool {
     patterns.iter().any(|p| message.contains(p))
+}
+
+#[allow(dead_code)]
+fn save_rule(pattern: String, responses: Vec<String>) {
+    BOT_RULES.insert(pattern, responses);
 }
 
 async fn send_message(channel: ChannelId, ctx: Context, message: &str) {
@@ -80,16 +86,16 @@ async fn send_message(channel: ChannelId, ctx: Context, message: &str) {
     }
 }
 
-fn random_choice<'a>(v: &[&'a str]) -> &'a str {
+fn random_choice<'a>(v: &[String]) -> &str {
     v.choose(&mut thread_rng()).unwrap() // todo: empty vector
 }
 
-fn respond(message: &str) -> Option<&str> {
+fn respond(message: &str) -> Option<String> {
     for entry in BOT_RULES.iter() {
-        let prompts = entry.key();
+        let prompt = entry.key();
         let responses = entry.value();
-        if match_message(message, prompts) {
-            return Some(random_choice(responses));
+        if message.contains(prompt) {
+            return Some(String::from(random_choice(responses)));
         }
     }
     None
@@ -99,7 +105,7 @@ fn respond(message: &str) -> Option<&str> {
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         match respond(&msg.content) {
-            Some(response) => send_message(msg.channel_id, ctx, response).await,
+            Some(response) => send_message(msg.channel_id, ctx, &response).await,
             None => (),
         }
     }
