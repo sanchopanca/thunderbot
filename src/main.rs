@@ -1,20 +1,25 @@
 use std::env;
+use std::time::{Duration, Instant};
 
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
+use hyper::body;
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server};
+use hyper::{Body, Method, Request, Response, Server};
 use std::{convert::Infallible, net::SocketAddr};
+use uuid::Uuid;
 
 use tera::{Context as TeraContext, Tera};
 
 use futures::join;
 
+use serde::Deserialize;
+
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
-use serenity::model::prelude::ChannelId;
+use serenity::model::prelude::{ChannelId, GuildId};
 use serenity::prelude::*;
 
 use lazy_static::lazy_static;
@@ -50,8 +55,18 @@ lazy_static! {
         rules.insert(String::from("kpop time"), kpop.clone());
         rules.insert(String::from("k p o p   t i m e"), kpop.clone());
         rules.insert(String::from("kpop tijd"), kpop);
-        rules.insert(String::from("hat a week huh"), vec![String::from("https://whataweek.eu")]);
-        rules.insert(String::from("hat a week huh"), vec![String::from("https://whataweek.eu")]);
+        rules.insert(
+            String::from("hat a week huh"),
+            vec![String::from("https://whataweek.eu")],
+        );
+        rules.insert(
+            String::from("hat a week huh"),
+            vec![String::from("https://whataweek.eu")],
+        );
+        rules.insert(
+            String::from("(╯°□°)╯︵ ┻━┻"),
+            vec![String::from("┬─┬ノ(º_ºノ)")],
+        );
         rules
     };
 }
@@ -68,6 +83,10 @@ lazy_static! {
     };
 }
 
+lazy_static! {
+    pub static ref TOKENS: DashMap<String, (u64, Instant)> = DashMap::new();
+}
+
 struct Handler;
 
 #[allow(dead_code)]
@@ -76,11 +95,24 @@ fn match_message(message: &str, patterns: &[&str]) -> bool {
 }
 
 #[allow(dead_code)]
-fn save_rule(pattern: String, responses: Vec<String>) {
-    BOT_RULES.insert(pattern, responses);
+fn save_rule(pattern: String, mut responses: Vec<String>) {
+    match BOT_RULES.get_mut(&pattern) {
+        None => {
+            BOT_RULES.insert(pattern, responses);
+        }
+        Some(mut entry) => {
+            let value_ptr = entry.value_mut();
+            (*value_ptr).append(&mut responses);
+        }
+    }
 }
 
-async fn send_message(channel: ChannelId, ctx: Context, message: &str) {
+#[allow(dead_code)]
+fn save_rule_single_response(pattern: String, response: String) {
+    save_rule(pattern, vec![response]);
+}
+
+async fn send_message(channel: ChannelId, ctx: &Context, message: &str) {
     if let Err(why) = channel.say(&ctx.http, message).await {
         println!("Error sending message: {:?}", why);
     }
@@ -101,11 +133,21 @@ fn respond(message: &str) -> Option<String> {
     None
 }
 
+#[allow(dead_code)]
+fn get_guild() -> GuildId {
+    GuildId::from(
+        env::var("DISCORD_GUILD_ID")
+            .expect("Provide DISCORD_GUILD_ID env variable")
+            .parse::<u64>()
+            .expect("DISCORD_GUILD_ID must be integer"),
+    )
+}
+
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         match respond(&msg.content) {
-            Some(response) => send_message(msg.channel_id, ctx, &response).await,
+            Some(response) => send_message(msg.channel_id, &ctx, &response).await,
             None => (),
         }
     }
@@ -115,7 +157,45 @@ impl EventHandler for Handler {
     }
 }
 
-async fn handle_web_request(_: Request<Body>) -> Result<Response<Body>, Infallible> {
+#[allow(dead_code)]
+fn generate_token(user_id: u64) {
+    let token = Uuid::new_v4().to_string();
+    TOKENS.insert(token, (user_id, Instant::now()));
+}
+
+#[allow(dead_code)]
+fn validate_token(token: &str) -> bool {
+    match TOKENS.get(token) {
+        Some(entry) => {
+            let delta = Instant::now() - entry.value().1;
+            delta > Duration::from_secs(900)
+        }
+        None => false,
+    }
+}
+
+#[derive(Debug, Deserialize)]
+enum RuleUpdateOperation {
+    Add,
+    Remove,
+}
+
+#[derive(Deserialize)]
+struct RuleUpdateRequest {
+    operation: RuleUpdateOperation,
+    pattern: String,
+    response: String,
+}
+
+async fn handle_web_request(request: Request<Body>) -> Result<Response<Body>, Infallible> {
+    if request.method() == Method::POST {
+        let bytes = body::to_bytes(request.into_body()).await.unwrap();
+        let req: RuleUpdateRequest = serde_json::from_slice(&bytes.to_vec()).unwrap();
+
+        return Ok(Response::new(
+            format!("{} {} {:?}", req.pattern, req.response, req.operation).into(),
+        ));
+    }
     let mut ctx = TeraContext::new();
     ctx.insert("who", "world");
     Ok(Response::new(
