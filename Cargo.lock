@@ -1328,6 +1328,7 @@ dependencies = [
  "serenity",
  "tera",
  "tokio",
+ "url",
  "uuid",
 ]
 

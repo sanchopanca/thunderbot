@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use std::time::{Duration, Instant};
 
@@ -146,6 +147,16 @@ fn get_guild() -> GuildId {
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
+        if msg.content.starts_with("!edit") {
+            send_message(
+                msg.channel_id,
+                &ctx,
+                &format!(
+                    "http://localhost:3000/?token={}",
+                    generate_token(msg.author.id.0)
+                ),
+            ).await;
+        }
         match respond(&msg.content) {
             Some(response) => send_message(msg.channel_id, &ctx, &response).await,
             None => (),
@@ -157,18 +168,17 @@ impl EventHandler for Handler {
     }
 }
 
-#[allow(dead_code)]
-fn generate_token(user_id: u64) {
+fn generate_token(user_id: u64) -> String {
     let token = Uuid::new_v4().to_string();
-    TOKENS.insert(token, (user_id, Instant::now()));
+    TOKENS.insert(token.clone(), (user_id, Instant::now()));
+    token
 }
 
-#[allow(dead_code)]
 fn validate_token(token: &str) -> bool {
     match TOKENS.get(token) {
         Some(entry) => {
             let delta = Instant::now() - entry.value().1;
-            delta > Duration::from_secs(900)
+            delta < Duration::from_secs(900)
         }
         None => false,
     }
@@ -188,6 +198,39 @@ struct RuleUpdateRequest {
 }
 
 async fn handle_web_request(request: Request<Body>) -> Result<Response<Body>, Infallible> {
+    let params: HashMap<String, String> = request
+        .uri()
+        .query()
+        .map(|v| {
+            url::form_urlencoded::parse(v.as_bytes())
+                .into_owned()
+                .collect()
+        })
+        .unwrap_or_else(HashMap::new);
+    let mut ctx = TeraContext::new();
+    ctx.insert("who", "world");
+    if request.method() == Method::GET {
+        match params.get("token") {
+            Some(token) => {
+                if validate_token(token) {
+                    return Ok(Response::new(
+                        TEMPLATES.render("index.html", &ctx).unwrap().into(),
+                    ));
+                } else {
+                    return Ok(Response::builder()
+                        .status(403)
+                        .body(TEMPLATES.render("403.html", &ctx).unwrap().into())
+                        .unwrap());
+                }
+            }
+            None => {
+                return Ok(Response::builder()
+                    .status(401)
+                    .body(TEMPLATES.render("401.html", &ctx).unwrap().into())
+                    .unwrap())
+            }
+        }
+    }
     if request.method() == Method::POST {
         let bytes = body::to_bytes(request.into_body()).await.unwrap();
         let req: RuleUpdateRequest = serde_json::from_slice(&bytes.to_vec()).unwrap();
@@ -196,8 +239,6 @@ async fn handle_web_request(request: Request<Body>) -> Result<Response<Body>, In
             format!("{} {} {:?}", req.pattern, req.response, req.operation).into(),
         ));
     }
-    let mut ctx = TeraContext::new();
-    ctx.insert("who", "world");
     Ok(Response::new(
         TEMPLATES.render("index.html", &ctx).unwrap().into(),
     ))
