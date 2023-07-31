@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::env;
 use std::time::{Duration, Instant};
 
+use chat_gpt_lib_rs::Model;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
@@ -20,7 +21,7 @@ use serde::Deserialize;
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
-use serenity::model::prelude::{ChannelId, GuildId};
+use serenity::model::prelude::{ChannelId, GuildId, MessageId};
 use serenity::prelude::*;
 
 use lazy_static::lazy_static;
@@ -134,6 +135,59 @@ fn respond(message: &str) -> Option<String> {
     None
 }
 
+async fn summarize(channel: ChannelId, last_message: MessageId, ctx: &Context) -> Option<String> {
+    let messages = channel
+        .messages(&ctx.http, |retriever| retriever.before(last_message))
+        .await;
+
+    if let Ok(messages) = messages {
+        if messages.is_empty() {
+            eprintln!("Summarize: No messages found");
+            return None;
+        }
+        ask_ai_for_summarization(messages).await
+    } else {
+        None
+    }
+}
+
+async fn ask_ai_for_summarization(messages_in_reverse_order: Vec<Message>) -> Option<String> {
+    let api_key = env::var("OPENAI_API_KEY").expect("Provide OPENAI_API_KEY env variable");
+
+    let client = chat_gpt_lib_rs::ChatGPTClient::new(&api_key, "https://api.openai.com");
+
+    let chat_input = chat_gpt_lib_rs::ChatInput {
+        model: Model::Gpt3_5Turbo,
+        messages: vec![
+            chat_gpt_lib_rs::Message {
+                role: chat_gpt_lib_rs::Role::System,
+                content: "You are summarizing last 50 messages in group chat. Be not too verbose and use informal language".to_string(),
+            },
+            chat_gpt_lib_rs::Message {
+                role: chat_gpt_lib_rs::Role::User,
+                content: revrse_messages(messages_in_reverse_order),
+            },
+        ],
+        ..Default::default()
+    };
+
+    match client.chat(chat_input).await {
+        Ok(response) => {
+            println!("{:?}", response);
+            Some(response.choices[0].message.content.clone())
+        }
+        Err(_) => None,
+    }
+}
+
+fn revrse_messages(messages: Vec<Message>) -> String {
+    messages
+        .into_iter()
+        .rev()
+        .map(|msg| format!("{}: {}\n", msg.author.name, msg.content))
+        .collect()
+}
+
 #[allow(dead_code)]
 fn get_guild() -> GuildId {
     GuildId::from(
@@ -155,11 +209,18 @@ impl EventHandler for Handler {
                     "http://localhost:3000/?token={}",
                     generate_token(msg.author.id.0)
                 ),
-            ).await;
+            )
+            .await;
         }
-        match respond(&msg.content) {
-            Some(response) => send_message(msg.channel_id, &ctx, &response).await,
-            None => (),
+
+        if msg.content.contains("bot, what are they talking about") {
+            if let Some(message) = summarize(msg.channel_id, msg.id, &ctx).await {
+                send_message(msg.channel_id, &ctx, &message).await
+            }
+        }
+
+        if let Some(response) = respond(&msg.content) {
+            send_message(msg.channel_id, &ctx, &response).await
         }
     }
 
@@ -249,6 +310,7 @@ async fn handle_web_request(request: Request<Body>) -> Result<Response<Body>, In
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     let token = env::var("DISCORD_API_TOKEN").expect("Provide DISCORD_API_TOKEN env variable");
+    let _ = env::var("OPENAI_API_KEY").expect("Provide OPENAI_API_KEY env variable");
     // Set gateway intents, which decides what events the bot will be notified about
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::DIRECT_MESSAGES
