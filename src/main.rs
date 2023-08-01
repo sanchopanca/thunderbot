@@ -1,32 +1,27 @@
-use std::collections::HashMap;
-use std::env;
-use std::time::{Duration, Instant};
+mod ai;
 
-use chat_gpt_lib_rs::Model;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
-
+use anyhow::Result;
+use dashmap::DashMap;
+use futures::join;
 use hyper::body;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Server};
-use std::{convert::Infallible, net::SocketAddr};
-use uuid::Uuid;
-
-use tera::{Context as TeraContext, Tera};
-
-use futures::join;
-
+use lazy_static::lazy_static;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use serde::Deserialize;
-
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::{ChannelId, GuildId, MessageId};
 use serenity::prelude::*;
-
-use lazy_static::lazy_static;
-
-use dashmap::DashMap;
+use std::collections::HashMap;
+use std::env;
+use std::time::{Duration, Instant};
+use std::{convert::Infallible, net::SocketAddr};
+use tera::{Context as TeraContext, Tera};
+use thiserror::Error;
+use uuid::Uuid;
 
 lazy_static! {
     static ref BOT_RULES: DashMap<String, Vec<String>> = {
@@ -135,49 +130,26 @@ fn respond(message: &str) -> Option<String> {
     None
 }
 
-async fn summarize(channel: ChannelId, last_message: MessageId, ctx: &Context) -> Option<String> {
-    let messages = channel
-        .messages(&ctx.http, |retriever| retriever.before(last_message))
-        .await;
+#[derive(Error, Debug)]
+#[error("No messages found")]
+struct NoMessagesError;
 
-    if let Ok(messages) = messages {
-        if messages.is_empty() {
-            eprintln!("Summarize: No messages found");
-            return None;
-        }
-        ask_ai_for_summarization(messages).await
-    } else {
-        None
+impl NoMessagesError {
+    fn new() -> Self {
+        NoMessagesError
     }
 }
 
-async fn ask_ai_for_summarization(messages_in_reverse_order: Vec<Message>) -> Option<String> {
-    let api_key = env::var("OPENAI_API_KEY").expect("Provide OPENAI_API_KEY env variable");
+async fn summarize(channel: ChannelId, last_message: MessageId, ctx: &Context) -> Result<String> {
+    let messages = channel
+        .messages(&ctx.http, |retriever| retriever.before(last_message))
+        .await?;
 
-    let client = chat_gpt_lib_rs::ChatGPTClient::new(&api_key, "https://api.openai.com");
-
-    let chat_input = chat_gpt_lib_rs::ChatInput {
-        model: Model::Gpt3_5Turbo,
-        messages: vec![
-            chat_gpt_lib_rs::Message {
-                role: chat_gpt_lib_rs::Role::System,
-                content: "You are summarizing last 50 messages in group chat. Be not too verbose and use informal language".to_string(),
-            },
-            chat_gpt_lib_rs::Message {
-                role: chat_gpt_lib_rs::Role::User,
-                content: revrse_messages(messages_in_reverse_order),
-            },
-        ],
-        ..Default::default()
-    };
-
-    match client.chat(chat_input).await {
-        Ok(response) => {
-            println!("{:?}", response);
-            Some(response.choices[0].message.content.clone())
-        }
-        Err(_) => None,
+    if messages.is_empty() {
+        eprintln!("Summarize: No messages found");
+        return Err(NoMessagesError::new().into());
     }
+    ai::ask_ai_for_summarization(revrse_messages(messages)).await
 }
 
 fn revrse_messages(messages: Vec<Message>) -> String {
@@ -214,7 +186,7 @@ impl EventHandler for Handler {
         }
 
         if msg.content.contains("bot, what are they talking about") {
-            if let Some(message) = summarize(msg.channel_id, msg.id, &ctx).await {
+            if let Ok(message) = summarize(msg.channel_id, msg.id, &ctx).await {
                 send_message(msg.channel_id, &ctx, &message).await
             }
         }
