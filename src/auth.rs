@@ -14,6 +14,7 @@ pub fn generate_token(user_id: u64) -> String {
     token
 }
 
+#[allow(dead_code)]
 pub fn validate_token(token: &str) -> bool {
     match TOKENS.get(token) {
         Some(entry) => {
