@@ -1,9 +1,9 @@
 mod ai;
+mod auth;
 mod discord;
 mod message;
 
 use anyhow::Result;
-use dashmap::DashMap;
 use futures::join;
 use hyper::body;
 use hyper::service::{make_service_fn, service_fn};
@@ -12,10 +12,8 @@ use lazy_static::lazy_static;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::env;
-use std::time::{Duration, Instant};
 use std::{convert::Infallible, net::SocketAddr};
 use tera::{Context as TeraContext, Tera};
-use uuid::Uuid;
 
 lazy_static! {
     pub static ref TEMPLATES: Tera = {
@@ -27,26 +25,6 @@ lazy_static! {
             }
         }
     };
-}
-
-lazy_static! {
-    pub static ref TOKENS: DashMap<String, (u64, Instant)> = DashMap::new();
-}
-
-fn generate_token(user_id: u64) -> String {
-    let token = Uuid::new_v4().to_string();
-    TOKENS.insert(token.clone(), (user_id, Instant::now()));
-    token
-}
-
-fn validate_token(token: &str) -> bool {
-    match TOKENS.get(token) {
-        Some(entry) => {
-            let delta = Instant::now() - entry.value().1;
-            delta < Duration::from_secs(900)
-        }
-        None => false,
-    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -77,7 +55,7 @@ async fn handle_web_request(request: Request<Body>) -> Result<Response<Body>, In
     if request.method() == Method::GET {
         match params.get("token") {
             Some(token) => {
-                if validate_token(token) {
+                if auth::validate_token(token) {
                     return Ok(Response::new(
                         TEMPLATES.render("index.html", &ctx).unwrap().into(),
                     ));

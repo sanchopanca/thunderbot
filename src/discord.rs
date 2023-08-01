@@ -7,7 +7,7 @@ use serenity::{
 use std::env;
 use thiserror::Error;
 
-use crate::{ai, message};
+use crate::{ai, auth, message};
 
 #[allow(dead_code)]
 fn get_guild() -> GuildId {
@@ -66,7 +66,7 @@ impl EventHandler for Handler {
                 &ctx,
                 &format!(
                     "http://localhost:3000/?token={}",
-                    crate::generate_token(msg.author.id.0)
+                    auth::generate_token(msg.author.id.0)
                 ),
             )
             .await;
