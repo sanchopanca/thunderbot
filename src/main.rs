@@ -120,7 +120,7 @@ async fn send_message(channel: ChannelId, ctx: &Context, message: &str) {
     }
 }
 
-fn random_choice<'a>(v: &[String]) -> &str {
+fn random_choice(v: &[String]) -> &str {
     v.choose(&mut thread_rng()).unwrap() // todo: empty vector
 }
 
@@ -294,7 +294,7 @@ async fn handle_web_request(request: Request<Body>) -> Result<Response<Body>, In
     }
     if request.method() == Method::POST {
         let bytes = body::to_bytes(request.into_body()).await.unwrap();
-        let req: RuleUpdateRequest = serde_json::from_slice(&bytes.to_vec()).unwrap();
+        let req: RuleUpdateRequest = serde_json::from_slice(&bytes).unwrap();
 
         return Ok(Response::new(
             format!("{} {} {:?}", req.pattern, req.response, req.operation).into(),
