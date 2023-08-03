@@ -2,6 +2,7 @@ use anyhow::Result;
 use chat_gpt_lib_rs::{self, ChatGPTClient, ChatInput, Message, Model, Role};
 use std::env;
 
+#[allow(dead_code)]
 pub async fn ask_ai_for_summarization(messages: String) -> Result<String> {
     let api_key = env::var("OPENAI_API_KEY").expect("Provide OPENAI_API_KEY env variable");
 

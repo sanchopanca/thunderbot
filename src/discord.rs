@@ -7,7 +7,7 @@ use serenity::{
 use std::env;
 use thiserror::Error;
 
-use crate::{ai, auth, message};
+use crate::{auth, message};
 
 #[allow(dead_code)]
 fn get_guild() -> GuildId {
@@ -30,23 +30,30 @@ pub async fn send_message(channel: ChannelId, ctx: &Context, message: &str) {
 struct NoMessagesError;
 
 impl NoMessagesError {
+    #[allow(dead_code)]
     fn new() -> Self {
         NoMessagesError
     }
 }
 
-async fn summarize(channel: ChannelId, last_message: MessageId, ctx: &Context) -> Result<String> {
-    let messages = channel
-        .messages(&ctx.http, |retriever| retriever.before(last_message))
-        .await?;
+async fn summarize(
+    _channel: ChannelId,
+    _last_message: MessageId,
+    _ctx: &Context,
+) -> Result<String> {
+    Ok("Summarization functionality has been turned off until the time it's possible to run a decent LLM on a cheap VPS".to_string())
+    // let messages = channel
+    //     .messages(&ctx.http, |retriever| retriever.before(last_message))
+    //     .await?;
 
-    if messages.is_empty() {
-        eprintln!("Summarize: No messages found");
-        return Err(NoMessagesError::new().into());
-    }
-    ai::ask_ai_for_summarization(reverse_messages(messages)).await
+    // if messages.is_empty() {
+    //     eprintln!("Summarize: No messages found");
+    //     return Err(NoMessagesError::new().into());
+    // }
+    // ai::ask_ai_for_summarization(reverse_messages(messages)).await
 }
 
+#[allow(dead_code)]
 fn reverse_messages(messages: Vec<Message>) -> String {
     messages
         .into_iter()
