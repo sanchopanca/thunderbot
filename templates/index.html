@@ -1,18 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <title>Slackbot</title>
-        <meta charset="utf-8">
-    </head>
-    <body>
-        <h1>Hello, {{ who }}!</h1>
-        <table>
-            <caption>Slackbot</caption>
-            <tr>
-                <th>trigger</th>
-                <th>responses</th>
-            </tr>
-        </table>
-    </body>
-</html>
 
+<head>
+    <title>Slackbot</title>
+    <meta charset="utf-8">
+    <script src="https://unpkg.com/htmx.org@1.9.4"
+        integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV"
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://unpkg.com/missing.css@1.0.9/dist/missing.min.css">
+</head>
+
+<body>
+    <div hx-get="/rules" hx-trigger="load"></div>
+</body>
+
+</html>

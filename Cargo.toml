@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.72"
 axum = "0.6.19"
+axum-extra = { version = "0.7.5", features = ["form"] }
 chat-gpt-lib-rs = "0.2.1"
 dashmap = "5.4"
 futures = "0.3"
@@ -16,7 +17,13 @@ lazy_static = "1.4"
 rand = "0.8.5"
 serde = "1.0"
 serde_json = "1.0"
-serenity = { version = "0.11", default-features = false, features = ["client", "gateway", "rustls_backend", "model"] }
+serenity = { version = "0.11", default-features = false, features = [
+    "client",
+    "gateway",
+    "rustls_backend",
+    "model",
+] }
+sqlx = { version = "0.7.1", features = ["runtime-tokio", "sqlite"] }
 tera = "1"
 thiserror = "1.0.44"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }

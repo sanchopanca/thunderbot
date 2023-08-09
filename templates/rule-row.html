@@ -1,0 +1,21 @@
+<tr>
+    <td>{{ rule.name }}</td>
+    <td>
+        <table>
+            {% for pattern in rule.patterns %}
+            <tr>
+                <td>{{ pattern }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </td>
+    <td>
+        <table>
+            {% for response in rule.responses %}
+            <tr>
+                <td>{{ response }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </td>
+</tr>

@@ -1,5 +1,6 @@
 mod ai;
 mod auth;
+mod db;
 mod discord;
 mod message;
 mod web;
@@ -31,4 +32,5 @@ async fn main() {
 fn ensure_env() {
     let _ = env::var("DISCORD_API_TOKEN").expect("Provide DISCORD_API_TOKEN env variable");
     let _ = env::var("OPENAI_API_KEY").expect("Provide OPENAI_API_KEY env variable");
+    let _ = env::var("DATABASE_URL").expect("Provide DATABASE_URL env variable");
 }

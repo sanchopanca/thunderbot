@@ -1,0 +1,42 @@
+<table>
+    <caption>Rules</caption>
+    <thead>
+        <tr>
+            <th>name</th>
+            <th>trigger</th>
+            <th>responses</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for rule in rules %}
+        <tr>
+            <td>{{ rule.name }}</td>
+            <td>
+                <table>
+                    {% for pattern in rule.patterns %}
+                    <tr>
+                        <td>{{ pattern }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </td>
+            <td>
+                <table>
+                    {% for response in rule.responses %}
+                    <tr>
+                        <td>{{ response }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tbody id="add-new-rule">
+        <tr>
+            <td colspan="3">
+                <button hx-get="/new-rule-form" hx-target="#add-new-rule" hx-swap="beforebegin">Add +</button>
+            </td>
+        </tr>
+    </tbody>
+</table>
