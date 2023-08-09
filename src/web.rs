@@ -1,6 +1,6 @@
 use axum::{
     response::Html,
-    routing::{get, post},
+    routing::{delete, get, post},
     Extension, Router, Server,
 };
 use axum_extra::extract::Form;
@@ -42,6 +42,7 @@ pub async fn create_web_server() -> Result<(), hyper::Error> {
         .route("/rules", post(create_new_rule))
         .route("/pattern-input", get(additional_pattern_input))
         .route("/response-input", get(additional_response_input))
+        .route("/delete", delete(deltete_whatever))
         .layer(Extension(db));
     Server::bind(&SocketAddr::from(([127, 0, 0, 1], 3000)))
         .serve(app.into_make_service())
@@ -78,7 +79,17 @@ async fn create_new_rule(
     Form(form): Form<NewRuleForm>,
 ) -> Html<String> {
     let rule = db
-        .create_rule(form.name, form.patterns, form.responses)
+        .create_rule(
+            form.name,
+            form.patterns
+                .into_iter()
+                .filter(|p| !p.is_empty())
+                .collect(),
+            form.responses
+                .into_iter()
+                .filter(|r| !r.is_empty())
+                .collect(),
+        )
         .await;
     let mut ctx = TeraContext::new();
     ctx.insert("rule", &rule);
@@ -100,3 +111,5 @@ async fn additional_response_input() -> Html<String> {
             .unwrap(),
     )
 }
+
+async fn deltete_whatever() {}
