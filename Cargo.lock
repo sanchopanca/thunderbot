@@ -985,6 +985,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "hypersynthetic"
+version = "0.1.0"
+source = "git+https://github.com/sanchopanca/hypersynthetic.git#97272b2ba8fe2f5bd2d0e98cbe64ac8f4da80a58"
+dependencies = [
+ "hypersynthetic_macros",
+ "hypersynthetic_types",
+]
+
+[[package]]
+name = "hypersynthetic_macros"
+version = "0.1.0"
+source = "git+https://github.com/sanchopanca/hypersynthetic.git#97272b2ba8fe2f5bd2d0e98cbe64ac8f4da80a58"
+dependencies = [
+ "hypersynthetic_types",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.28",
+]
+
+[[package]]
+name = "hypersynthetic_types"
+version = "0.1.0"
+source = "git+https://github.com/sanchopanca/hypersynthetic.git#97272b2ba8fe2f5bd2d0e98cbe64ac8f4da80a58"
+
+[[package]]
 name = "iana-time-zone"
 version = "0.1.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2455,6 +2480,8 @@ dependencies = [
  "dashmap",
  "futures",
  "hyper",
+ "hypersynthetic",
+ "hypersynthetic_types",
  "lazy_static",
  "rand",
  "serde",

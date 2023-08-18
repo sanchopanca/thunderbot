@@ -5,6 +5,7 @@ use axum::{
     Extension, Router, Server,
 };
 use axum_extra::extract::Form;
+use hypersynthetic::html;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use std::{
@@ -57,10 +58,25 @@ pub async fn create_web_server() -> Result<(), hyper::Error> {
 }
 
 pub async fn home() -> Html<String> {
-    let mut ctx = TeraContext::new();
-    ctx.insert("who", "world");
+    Html(html! {
+        <!DOCTYPE html>
+        <html lang="en">
 
-    Html(TEMPLATES.render("index.html", &ctx).unwrap())
+            <head>
+                <title>{ "Slackbot" }</title>
+                <meta charset="utf-8" />
+                <script src="https://unpkg.com/htmx.org@1.9.4"
+                    integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV"
+                    crossorigin="anonymous"></script>
+                <link rel="stylesheet" href="https://unpkg.com/missing.css@1.0.9/dist/missing.min.css" />
+            </head>
+
+            <body>
+                <div hx-get="/rules" hx-trigger="load"></div>
+            </body>
+
+        </html>
+    }.to_html())
 }
 
 async fn rules_table(Extension(db): Extension<Db>) -> Html<String> {
