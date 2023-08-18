@@ -1,4 +1,5 @@
 use axum::{
+    extract::Query,
     response::Html,
     routing::{delete, get, post},
     Extension, Router, Server,
@@ -33,6 +34,11 @@ struct NewRuleForm {
     responses: Vec<String>,
 }
 
+#[derive(Deserialize)]
+struct RuleId {
+    rule_id: i64,
+}
+
 pub async fn create_web_server() -> Result<(), hyper::Error> {
     let db = Db::new().await;
     let app = Router::new()
@@ -43,6 +49,7 @@ pub async fn create_web_server() -> Result<(), hyper::Error> {
         .route("/pattern-input", get(additional_pattern_input))
         .route("/response-input", get(additional_response_input))
         .route("/delete", delete(deltete_whatever))
+        .route("/modify-rule-form", get(modify_rule_form))
         .layer(Extension(db));
     Server::bind(&SocketAddr::from(([127, 0, 0, 1], 3000)))
         .serve(app.into_make_service())
@@ -72,6 +79,13 @@ async fn new_rule_form() -> Html<String> {
     let mut ctx = TeraContext::new();
     ctx.insert("id", &id);
     Html(TEMPLATES.render("new-rule-form.html", &ctx).unwrap())
+}
+
+async fn modify_rule_form(Extension(db): Extension<Db>, Query(q): Query<RuleId>) -> Html<String> {
+    let rule = db.get_rule(q.rule_id).await;
+    let mut ctx = TeraContext::new();
+    ctx.insert("rule", &rule);
+    Html(TEMPLATES.render("modify-rule-form.html", &ctx).unwrap())
 }
 
 async fn create_new_rule(

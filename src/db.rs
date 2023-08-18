@@ -50,6 +50,45 @@ impl Db {
         Self { pool }
     }
 
+    pub async fn get_rule(&self, id: i64) -> Rule {
+        // TODO: return Result
+        let db_rule = sqlx::query_as!(
+            DBRule,
+            "SELECT id, name, updated_by, updated_at FROM rules WHERE id = ?",
+            id
+        )
+        .fetch_one(&self.pool)
+        .await
+        .unwrap();
+
+        let patterns: Vec<String> =
+            sqlx::query!("SELECT pattern FROM patterns WHERE rule_id = ?", id)
+                .fetch_all(&self.pool)
+                .await
+                .unwrap()
+                .into_iter()
+                .map(|r| r.pattern)
+                .collect();
+
+        let responses: Vec<String> =
+            sqlx::query!("SELECT response FROM responses WHERE rule_id = ?", id)
+                .fetch_all(&self.pool)
+                .await
+                .unwrap()
+                .into_iter()
+                .map(|r| r.response)
+                .collect();
+
+        Rule {
+            id: db_rule.id,
+            name: db_rule.name,
+            patterns,
+            responses,
+            updated_by: db_rule.updated_by,
+            updated_at: db_rule.updated_at,
+        }
+    }
+
     pub async fn get_rules(&self) -> Vec<Rule> {
         let db_rules =
             sqlx::query_as!(DBRule, "SELECT id, name, updated_by, updated_at FROM rules")

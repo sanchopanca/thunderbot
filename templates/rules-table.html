@@ -7,10 +7,18 @@
             <th>responses</th>
         </tr>
     </thead>
+
+    {% for rule in rules %}
     <tbody>
-        {% for rule in rules %}
-        <tr>
-            <td>{{ rule.name }}</td>
+        <tr id="rule{{ rule.id }}"">
+            <td>
+                <div style=" display: flex;">
+            {{ rule.name }}
+            <button hx-get="/modify-rule-form" hx-target="closest tbody" hx-swap="outerHTML"
+                hx-include="#modify-rule-{{ rule.id }}">✏️</button>
+            <input id="modify-rule-{{ rule.id }}" name="rule_id" type="hidden" value="{{ rule.id }}">
+            </div>
+            </td>
             <td>
                 <table>
                     {% for pattern in rule.patterns %}
@@ -30,8 +38,8 @@
                 </table>
             </td>
         </tr>
-        {% endfor %}
     </tbody>
+    {% endfor %}
     <tbody id="add-new-rule">
         <tr>
             <td colspan="3">
