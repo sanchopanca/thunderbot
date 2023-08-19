@@ -216,9 +216,29 @@ async fn create_new_rule(
                 .collect(),
         )
         .await;
-    let mut ctx = TeraContext::new();
-    ctx.insert("rule", &rule);
-    Html(TEMPLATES.render("rule-row.html", &ctx).unwrap())
+    Html( html! {
+        <tr>
+            <td>{ rule.name }</td>
+            <td>
+                <table>
+                    { rule.patterns.iter().map(|pattern| html! {
+                        <tr>
+                            <td>{ pattern }</td>
+                        </tr>
+                    })}
+                </table>
+            </td>
+            <td>
+                <table>
+                    { rule.responses.iter().map(|response| html! {
+                        <tr>
+                            <td>{ response }</td>
+                        </tr>
+                    })}
+                </table>
+            </td>
+        </tr>
+    }.to_html())
 }
 
 async fn additional_pattern_input() -> Html<String> {
