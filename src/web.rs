@@ -82,8 +82,6 @@ pub async fn home() -> Html<String> {
 async fn rules_table(Extension(db): Extension<Db>) -> Html<String> {
     let rules = db.get_rules().await;
 
-    let mut ctx = TeraContext::new();
-    ctx.insert("rules", &rules);
     Html(html! {
         <table>
     <caption>"Rules"</caption>
@@ -104,8 +102,8 @@ async fn rules_table(Extension(db): Extension<Db>) -> Html<String> {
                     <div style=" display: flex;">
                     { rule.name }
                     <button hx-get="/modify-rule-form" hx-target="closest tbody" hx-swap="outerHTML"
-                    hx-include="#modify-rule-{{ rule.id }}">"✏️"</button>
-                    <input id="modify-rule-{{ rule.id }}" name="rule_id" type="hidden" value={ rule.id } />
+                    hx-include={format!("#modify-rule-{}", rule.id)}>"✏️"</button>
+                    <input id={format!("modify-rule-{}", rule.id)} name="rule_id" type="hidden" value={ rule.id } />
                 </div>
                 </td>
                 <td>
@@ -145,9 +143,30 @@ async fn new_rule_form() -> Html<String> {
         Ok(n) => format!("id{}", n.as_millis()),
         _ => "rust_hasnt_been_invented_lol".to_string(),
     };
-    let mut ctx = TeraContext::new();
-    ctx.insert("id", &id);
-    Html(TEMPLATES.render("new-rule-form.html", &ctx).unwrap())
+    // let mut ctx = TeraContext::new();
+    // ctx.insert("id", &id);
+    Html(html! {
+        <tbody>
+            <tr id={ id }>
+                <td>
+                    <input name="name" placeholder="name" />
+                </td>
+                <td>
+                    <input name="patterns" placeholder="pattern" />
+                    <button hx-get="/pattern-input" hx-swap="beforebegin">"Add another trigger"</button>
+                </td>
+                <td>
+                    <input name="responses" placeholder="response" />
+                    <button hx-get="/response-input" hx-swap="beforebegin">"Add another response"</button>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3">
+                    <button hx-post="/rules" hx-target="closest tbody" hx-include={format!("#{id}")}>"Create"</button>
+                </td>
+            </tr>
+        </tbody>
+    }.to_html())
 }
 
 async fn modify_rule_form(Extension(db): Extension<Db>, Query(q): Query<RuleId>) -> Html<String> {
