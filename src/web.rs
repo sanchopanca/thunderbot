@@ -12,7 +12,7 @@ use std::{
     net::SocketAddr,
     time::{SystemTime, UNIX_EPOCH},
 };
-use tera::{Context as TeraContext, Tera};
+use tera::Tera;
 
 use crate::db::Db;
 
@@ -242,19 +242,21 @@ async fn create_new_rule(
 }
 
 async fn additional_pattern_input() -> Html<String> {
-    Html(
-        TEMPLATES
-            .render("pattern-input.html", &TeraContext::new())
-            .unwrap(),
-    )
+    Html( html!{
+        <div style="display: flex;">
+            <input name="patterns" placeholder="another pattern" />
+            <button hx-delete="/delete" hx-target="closest div" hx-swap="delete">"❌"</button>
+        </div>
+    }.to_html())
 }
 
 async fn additional_response_input() -> Html<String> {
-    Html(
-        TEMPLATES
-            .render("response-input.html", &TeraContext::new())
-            .unwrap(),
-    )
+    Html(html! {
+        <div style="display: flex;">
+            <input name="responses" placeholder="another response" />
+            <button hx-delete="/delete" hx-target="closest div" hx-swap="delete">"❌"</button>
+        </div>
+    }.to_html())
 }
 
 async fn deltete_whatever() {}
