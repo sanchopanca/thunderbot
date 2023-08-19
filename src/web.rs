@@ -84,7 +84,60 @@ async fn rules_table(Extension(db): Extension<Db>) -> Html<String> {
 
     let mut ctx = TeraContext::new();
     ctx.insert("rules", &rules);
-    Html(TEMPLATES.render("rules-table.html", &ctx).unwrap())
+    Html(html! {
+        <table>
+    <caption>"Rules"</caption>
+    <thead>
+        <tr>
+            <th>"name"</th>
+            <th>"trigger"</th>
+            <th>"responses"</th>
+        </tr>
+    </thead>
+
+    { rules.iter().map(|rule| html! {
+        
+    
+        <tbody>
+            <tr id={format!("rule{}", rule.id)}>
+                <td>
+                    <div style=" display: flex;">
+                    { rule.name }
+                    <button hx-get="/modify-rule-form" hx-target="closest tbody" hx-swap="outerHTML"
+                    hx-include="#modify-rule-{{ rule.id }}">"✏️"</button>
+                    <input id="modify-rule-{{ rule.id }}" name="rule_id" type="hidden" value={ rule.id } />
+                </div>
+                </td>
+                <td>
+                    <table>
+                        { rule.patterns.iter().map(|pattern| html! {
+                            <tr>
+                            <td>{{ pattern }}</td>
+                        </tr>
+                        })}
+                    </table>
+                </td>
+                <td>
+                    <table>
+                        {rule.responses.iter().map(|response| html! {
+                            <tr>
+                                <td>{{ response }}</td>
+                            </tr>
+                        })}
+                    </table>
+                </td>
+            </tr>
+        </tbody>
+    })}
+        <tbody id="add-new-rule">
+            <tr>
+                <td colspan="3">
+                    <button hx-get="/new-rule-form" hx-target="#add-new-rule" hx-swap="beforebegin">"Add +"</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    }.to_html())
 }
 
 async fn new_rule_form() -> Html<String> {

@@ -888,6 +888,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "htmlize"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6507eaed4d57bf58786aabd4ebc91a7d702d1fdace5ccc6479de1aee666765dd"
+dependencies = [
+ "memchr",
+ "paste",
+]
+
+[[package]]
 name = "http"
 version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -986,28 +996,24 @@ dependencies = [
 
 [[package]]
 name = "hypersynthetic"
-version = "0.1.0"
-source = "git+https://github.com/sanchopanca/hypersynthetic.git#97272b2ba8fe2f5bd2d0e98cbe64ac8f4da80a58"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fc1fb7c59594c123a273134016e06b47905cc791bbc4b236cfad2a54e519181"
 dependencies = [
+ "htmlize",
  "hypersynthetic_macros",
- "hypersynthetic_types",
 ]
 
 [[package]]
 name = "hypersynthetic_macros"
-version = "0.1.0"
-source = "git+https://github.com/sanchopanca/hypersynthetic.git#97272b2ba8fe2f5bd2d0e98cbe64ac8f4da80a58"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db0ff78749173c981686c042e3a75b302e6eb47d7ac40822b2cf86698d83aa6f"
 dependencies = [
- "hypersynthetic_types",
  "proc-macro2",
  "quote",
  "syn 2.0.28",
 ]
-
-[[package]]
-name = "hypersynthetic_types"
-version = "0.1.0"
-source = "git+https://github.com/sanchopanca/hypersynthetic.git#97272b2ba8fe2f5bd2d0e98cbe64ac8f4da80a58"
 
 [[package]]
 name = "iana-time-zone"
@@ -2481,7 +2487,6 @@ dependencies = [
  "futures",
  "hyper",
  "hypersynthetic",
- "hypersynthetic_types",
  "lazy_static",
  "rand",
  "serde",
