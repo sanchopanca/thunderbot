@@ -14,6 +14,7 @@ use std::{
 };
 use tera::Tera;
 
+use crate::components::RowsWihtSingleColumn;
 use crate::db::Db;
 
 lazy_static! {
@@ -108,20 +109,12 @@ async fn rules_table(Extension(db): Extension<Db>) -> Html<String> {
                 </td>
                 <td>
                     <table>
-                        { rule.patterns.iter().map(|pattern| html! {
-                            <tr>
-                            <td>{ pattern }</td>
-                        </tr>
-                        })}
+                        <RowsWihtSingleColumn items={ &rule.patterns }/>
                     </table>
                 </td>
                 <td>
                     <table>
-                        {rule.responses.iter().map(|response| html! {
-                            <tr>
-                                <td>{ response }</td>
-                            </tr>
-                        })}
+                        <RowsWihtSingleColumn items={ &rule.responses }/>
                     </table>
                 </td>
             </tr>
@@ -221,20 +214,12 @@ async fn create_new_rule(
             <td>{ rule.name }</td>
             <td>
                 <table>
-                    { rule.patterns.iter().map(|pattern| html! {
-                        <tr>
-                            <td>{ pattern }</td>
-                        </tr>
-                    })}
+                    <RowsWihtSingleColumn items={ &rule.patterns }/>
                 </table>
             </td>
             <td>
                 <table>
-                    { rule.responses.iter().map(|response| html! {
-                        <tr>
-                            <td>{ response }</td>
-                        </tr>
-                    })}
+                    <RowsWihtSingleColumn items={ &rule.responses }/>
                 </table>
             </td>
         </tr>

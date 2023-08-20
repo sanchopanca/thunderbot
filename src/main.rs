@@ -1,5 +1,6 @@
 mod ai;
 mod auth;
+mod components;
 mod db;
 mod discord;
 mod message;
