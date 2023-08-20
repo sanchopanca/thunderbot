@@ -1,6 +1,5 @@
 use std::env;
 
-use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite, SqlitePool};
 
 #[derive(Clone)]
@@ -33,7 +32,7 @@ struct DBResponse {
     updated_at: i64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct Rule {
     pub id: i64,
     pub name: String,

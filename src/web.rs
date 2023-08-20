@@ -6,28 +6,14 @@ use axum::{
 };
 use axum_extra::extract::Form;
 use hypersynthetic::html;
-use lazy_static::lazy_static;
 use serde::Deserialize;
 use std::{
     net::SocketAddr,
     time::{SystemTime, UNIX_EPOCH},
 };
-use tera::Tera;
 
 use crate::components::RuleRow;
 use crate::db::Db;
-
-lazy_static! {
-    pub static ref TEMPLATES: Tera = {
-        match Tera::new("templates/**/*") {
-            Ok(t) => t,
-            Err(e) => {
-                println!("Parsing error(s): {}", e);
-                ::std::process::exit(1);
-            }
-        }
-    };
-}
 
 #[derive(Deserialize)]
 struct NewRuleForm {

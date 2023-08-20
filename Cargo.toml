@@ -17,7 +17,6 @@ hypersynthetic = { version = "0.1.2" }
 lazy_static = "1.4"
 rand = "0.8.5"
 serde = "1.0"
-serde_json = "1.0"
 serenity = { version = "0.11", default-features = false, features = [
     "client",
     "gateway",
@@ -25,7 +24,6 @@ serenity = { version = "0.11", default-features = false, features = [
     "model",
 ] }
 sqlx = { version = "0.7.1", features = ["runtime-tokio", "sqlite"] }
-tera = "1"
 thiserror = "1.0.44"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 url = "2.3.1"
