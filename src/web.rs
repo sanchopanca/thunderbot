@@ -14,7 +14,7 @@ use std::{
 };
 use tera::Tera;
 
-use crate::components::TableWihtSingleColumn;
+use crate::components::RuleRow;
 use crate::db::Db;
 
 lazy_static! {
@@ -98,22 +98,7 @@ async fn rules_table(Extension(db): Extension<Db>) -> Html<String> {
         
     
         <tbody>
-            <tr id={format!("rule{}", rule.id)}>
-                <td>
-                    <div style=" display: flex;">
-                    { rule.name }
-                    <button hx-get="/modify-rule-form" hx-target="closest tbody" hx-swap="outerHTML"
-                    hx-include={format!("#modify-rule-{}", rule.id)}>"✏️"</button>
-                    <input id={format!("modify-rule-{}", rule.id)} name="rule_id" type="hidden" value={ rule.id } />
-                </div>
-                </td>
-                <td>
-                    <TableWihtSingleColumn items={ &rule.patterns }/>
-                </td>
-                <td>
-                    <TableWihtSingleColumn items={ &rule.responses }/>
-                </td>
-            </tr>
+            <RuleRow rule={ rule }/>
         </tbody>
     })}
         <tbody id="add-new-rule">
@@ -205,17 +190,7 @@ async fn create_new_rule(
                 .collect(),
         )
         .await;
-    Html( html! {
-        <tr>
-            <td>{ rule.name }</td>
-            <td>
-                <TableWihtSingleColumn items={ &rule.patterns }/>
-            </td>
-            <td>
-                <TableWihtSingleColumn items={ &rule.responses }/>
-            </td>
-        </tr>
-    }.to_html())
+    Html(RuleRow(&rule).to_html())
 }
 
 async fn additional_pattern_input() -> Html<String> {
