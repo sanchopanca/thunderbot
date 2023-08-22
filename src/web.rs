@@ -121,7 +121,7 @@ async fn new_rule_form() -> Html<String> {
             </tr>
             <tr>
                 <td colspan="3">
-                    <button hx-post="/rules" hx-target="closest tbody" hx-include={format!("#{id}")}>"Create"</button>
+                    <button hx-post="/rules" hx-target="closest tbody" hx-include="#{id}">"Create"</button>
                 </td>
             </tr>
         </tbody>
@@ -133,7 +133,7 @@ async fn modify_rule_form(Extension(db): Extension<Db>, Query(q): Query<RuleId>)
 
     Html( html!(
         <tbody>
-            <tr id={format!("rule-form-{}", rule.id)}>
+            <tr id="rule-form-{rule.id}">
                 <td>
                     <input name="name" placeholder="name" value={ rule.name } />
                 </td>
@@ -152,7 +152,7 @@ async fn modify_rule_form(Extension(db): Extension<Db>, Query(q): Query<RuleId>)
             </tr>
             <tr>
                 <td colspan="3">
-                    <button hx-post="/rules" hx-target="closest tbody" hx-include={format!("#rule-form-{}", rule.id)}>"Save"</button>
+                    <button hx-post="/rules" hx-target="closest tbody" hx-include="#rule-form-{rule.id}">"Save"</button>
                 </td>
             </tr>
         </tbody>

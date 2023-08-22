@@ -23,13 +23,13 @@ where
 #[component]
 pub fn RuleRow(rule: &Rule) -> NodeCollection {
     html! {
-        <tr id={format!("rule{}", rule.id)}>
+        <tr id="rule{rule.id}">
             <td>
                 <div style=" display: flex;">
                 { rule.name }
                 <button hx-get="/modify-rule-form" hx-target="closest tbody" hx-swap="outerHTML"
-                hx-include={format!("#modify-rule-{}", rule.id)}>"✏️"</button>
-                <input id={format!("modify-rule-{}", rule.id)} name="rule_id" type="hidden" value={ rule.id } />
+                hx-include="#modify-rule-{rule.id}">"✏️"</button>
+                <input id="modify-rule-{rule.id}" name="rule_id" type="hidden" value={ rule.id } />
             </div>
             </td>
             <td>
