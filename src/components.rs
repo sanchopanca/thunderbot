@@ -1,27 +1,25 @@
-use hypersynthetic::{component, html, NodeCollection};
+use hypersynthetic::prelude::*;
 use std::fmt::Display;
 
 use crate::db::Rule;
 
 #[component]
-pub fn TableWihtSingleColumn<I, T>(items: I) -> NodeCollection
+pub fn TableWihtSingleColumn<I, T>(items: I) -> HtmlFragment
 where
     I: IntoIterator<Item = T>,
     T: Display,
 {
     html! {
         <table>
-        { items.into_iter().map(|thing| html! {
-            <tr>
-                <td>{ thing }</td>
+            <tr :for={item in items}>
+                <td>{ item }</td>
             </tr>
-        })}
         </table>
     }
 }
 
 #[component]
-pub fn RuleRow(rule: &Rule) -> NodeCollection {
+pub fn RuleRow(rule: &Rule) -> HtmlFragment {
     html! {
         <tr id="rule{rule.id}">
             <td>

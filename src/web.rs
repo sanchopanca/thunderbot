@@ -1,51 +1,41 @@
-use axum::{
-    extract::Query,
-    response::Html,
-    routing::{delete, get, post},
-    Extension, Router, Server,
-};
-use axum_extra::extract::Form;
-use hypersynthetic::html;
-use serde::Deserialize;
-use std::{
-    net::SocketAddr,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use hypersynthetic::{html, HtmlFragment};
+use rocket::form::Form;
+use rocket::{delete, get, post, routes, Build, FromForm, Rocket, State};
 
 use crate::components::RuleRow;
 use crate::db::Db;
 
-#[derive(Deserialize)]
+#[derive(FromForm)]
 struct NewRuleForm {
     name: String,
     patterns: Vec<String>,
     responses: Vec<String>,
 }
 
-#[derive(Deserialize)]
-struct RuleId {
-    rule_id: i64,
-}
-
-pub async fn create_web_server() -> Result<(), hyper::Error> {
+pub async fn create_web_server() -> Rocket<Build> {
     let db = Db::new().await;
-    let app = Router::new()
-        .route("/", get(home))
-        .route("/rules", get(rules_table))
-        .route("/new-rule-form", get(new_rule_form))
-        .route("/rules", post(create_new_rule))
-        .route("/pattern-input", get(additional_pattern_input))
-        .route("/response-input", get(additional_response_input))
-        .route("/delete", delete(deltete_whatever))
-        .route("/modify-rule-form", get(modify_rule_form))
-        .layer(Extension(db));
-    Server::bind(&SocketAddr::from(([127, 0, 0, 1], 3000)))
-        .serve(app.into_make_service())
-        .await
+    rocket::build()
+        .mount(
+            "/",
+            routes![
+                home,
+                rules_table,
+                new_rule_form,
+                create_new_rule,
+                additional_pattern_input,
+                additional_response_input,
+                deltete_whatever,
+                modify_rule_form,
+            ],
+        )
+        .manage(db)
 }
 
-pub async fn home() -> Html<String> {
-    Html(html! {
+#[get("/")]
+fn home() -> HtmlFragment {
+    html! {
         <!DOCTYPE html>
         <html lang="en">
 
@@ -63,48 +53,45 @@ pub async fn home() -> Html<String> {
             </body>
 
         </html>
-    }.to_html())
+    }
 }
 
-async fn rules_table(Extension(db): Extension<Db>) -> Html<String> {
+#[get("/rules")]
+async fn rules_table(db: &State<Db>) -> HtmlFragment {
     let rules = db.get_rules().await;
 
-    Html(html! {
+    html! {
         <table>
-    <caption>"Rules"</caption>
-    <thead>
-        <tr>
-            <th>"name"</th>
-            <th>"trigger"</th>
-            <th>"responses"</th>
-        </tr>
-    </thead>
-
-    { rules.iter().map(|rule| html! {
-        
-    
-        <tbody>
-            <RuleRow rule={ rule }/>
-        </tbody>
-    })}
-        <tbody id="add-new-rule">
-            <tr>
-                <td colspan="3">
-                    <button hx-get="/new-rule-form" hx-target="#add-new-rule" hx-swap="beforebegin">"Add +"</button>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    }.to_html())
+            <caption>"Rules"</caption>
+            <thead>
+                <tr>
+                    <th>"name"</th>
+                    <th>"trigger"</th>
+                    <th>"responses"</th>
+                </tr>
+            </thead>
+            <tbody :for={rule in rules}>
+                <RuleRow rule={ &rule }/>
+            </tbody>
+            <tbody id="add-new-rule">
+                <tr>
+                    <td colspan="3">
+                        <button hx-get="/new-rule-form" hx-target="#add-new-rule" hx-swap="beforebegin">"Add +"</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    }
 }
 
-async fn new_rule_form() -> Html<String> {
+#[get("/new-rule-form")]
+async fn new_rule_form() -> HtmlFragment {
     let id = match SystemTime::now().duration_since(UNIX_EPOCH) {
         Ok(n) => format!("id{}", n.as_millis()),
         _ => "rust_hasnt_been_invented_lol".to_string(),
     };
 
-    Html(html! {
+    html! {
         <tbody>
             <tr id={ id }>
                 <td>
@@ -125,28 +112,25 @@ async fn new_rule_form() -> Html<String> {
                 </td>
             </tr>
         </tbody>
-    }.to_html())
+    }
 }
 
-async fn modify_rule_form(Extension(db): Extension<Db>, Query(q): Query<RuleId>) -> Html<String> {
-    let rule = db.get_rule(q.rule_id).await;
+#[get("/modify-rule-form?<rule_id>")]
+async fn modify_rule_form(db: &State<Db>, rule_id: i64) -> HtmlFragment {
+    let rule = db.get_rule(rule_id).await;
 
-    Html( html!(
+    html! {
         <tbody>
             <tr id="rule-form-{rule.id}">
                 <td>
                     <input name="name" placeholder="name" value={ rule.name } />
                 </td>
                 <td>
-                    { rule.patterns.iter().map (|pattern| html! {
-                        <input name="patterns" placeholder="pattern" value={ pattern } />
-                    })}
+                    <input :for={pattern in rule.patterns} name="patterns" placeholder="pattern" value={ pattern } />
                     <button hx-get="/pattern-input" hx-swap="beforebegin">"Add another trigger"</button>
                 </td>
                 <td>
-                    { rule.responses.iter().map (|response| html! {
-                        <input name="responses" placeholder="response" value={ response } />
-                    })}
+                    <input :for={response in rule.responses} name="responses" placeholder="response" value={ response } />
                     <button hx-get="/response-input" hx-swap="beforebegin">"Add another response"</button>
                 </td>
             </tr>
@@ -156,13 +140,12 @@ async fn modify_rule_form(Extension(db): Extension<Db>, Query(q): Query<RuleId>)
                 </td>
             </tr>
         </tbody>
-    ).to_html())
+    }
 }
 
-async fn create_new_rule(
-    Extension(db): Extension<Db>,
-    Form(form): Form<NewRuleForm>,
-) -> Html<String> {
+#[post("/rules", data = "<form>")]
+async fn create_new_rule(db: &State<Db>, form: Form<NewRuleForm>) -> HtmlFragment {
+    let form = form.into_inner();
     let rule = db
         .create_rule(
             form.name,
@@ -176,25 +159,30 @@ async fn create_new_rule(
                 .collect(),
         )
         .await;
-    Html(RuleRow(&rule).to_html())
+    RuleRow(&rule)
 }
 
-async fn additional_pattern_input() -> Html<String> {
-    Html( html!{
+#[get("/pattern-input")]
+fn additional_pattern_input() -> HtmlFragment {
+    html! {
         <div style="display: flex;">
             <input name="patterns" placeholder="another pattern" />
             <button hx-delete="/delete" hx-target="closest div" hx-swap="delete">"❌"</button>
         </div>
-    }.to_html())
+    }
 }
 
-async fn additional_response_input() -> Html<String> {
-    Html(html! {
+#[get("/response-input")]
+fn additional_response_input() -> HtmlFragment {
+    html! {
         <div style="display: flex;">
             <input name="responses" placeholder="another response" />
             <button hx-delete="/delete" hx-target="closest div" hx-swap="delete">"❌"</button>
         </div>
-    }.to_html())
+    }
 }
 
-async fn deltete_whatever() {}
+#[delete("/delete")]
+fn deltete_whatever() -> HtmlFragment {
+    html! {}
+}
