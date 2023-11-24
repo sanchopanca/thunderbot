@@ -9,5 +9,6 @@ async fn rocket() -> _ {
 }
 
 fn ensure_env() {
+    dotenv::dotenv().ok();
     let _ = env::var("DATABASE_URL").expect("Provide DATABASE_URL env variable");
 }

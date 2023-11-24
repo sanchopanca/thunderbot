@@ -54,6 +54,7 @@ async fn summarize(
 }
 
 #[allow(dead_code)]
+#[allow(clippy::format_collect)]
 fn reverse_messages(messages: Vec<Message>) -> String {
     messages
         .into_iter()
